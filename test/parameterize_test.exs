@@ -4,12 +4,12 @@ defmodule ParameterizeTest do
 
   import ExUnit.CaptureIO
 
-  test "parametrized test" do
+  test "parameterized test" do
     defmodule SampleTest do
       use ExUnit.Case
       import Parameterize
 
-      parametrized_test "basic test", [
+      parameterized_test "basic test", [
         [a: 1, b: 2, expected: 3],
         [a: 1, b: 2, expected: 4]
       ] do
@@ -31,7 +31,7 @@ defmodule ParameterizeTest do
     defmodule SampleTest do
       use ExUnit.Case
       import Parameterize
-      parametrized_test "name", [
+      parameterized_test "name", [
         [a: 1, b: "2"],
         {:explicit_id, [a: 1, b: "2"]},
         [a: 1, b: [c: 2, d: 3], c: %{e: "f"}],
@@ -64,7 +64,7 @@ defmodule ParameterizeTest do
     defmodule SampleTest do
       use ExUnit.Case
       import Parameterize
-      parametrized_test "name", [
+      parameterized_test "name", [
         [a: 1, b: 2],
       ] do
         assert a * a == b

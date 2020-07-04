@@ -76,7 +76,7 @@ defmodule Parameterize do
     end
   end
 
-  defmacro parametrized_test(name, context, parameters, block) do
+  defmacro parameterized_test(name, context, parameters, block) do
     # IO.inspect(name)
     # IO.inspect(context)
 
@@ -108,13 +108,13 @@ defmodule Parameterize do
     end
   end
 
-  defmacro parametrized_test(name, parameters, block) do
+  defmacro parameterized_test(name, parameters, block) do
     quote do
-      parametrized_test(unquote(name), _, unquote(parameters), unquote(block))
+      parameterized_test(unquote(name), _, unquote(parameters), unquote(block))
     end
   end
 
-  defmacro parametrized_test(name, parameters) do
+  defmacro parameterized_test(name, parameters) do
     for {param, index} <- Enum.with_index(parameters) do
       {id, values} = unpack(param)
       name = make_name(name, id, index)
