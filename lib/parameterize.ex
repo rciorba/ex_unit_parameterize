@@ -76,7 +76,7 @@ defmodule Parameterize do
     end
   end
 
-  defmacro parameterized_test(name, context, parameters, block) do
+  defmacro parameterized_test(name, context, parameters, block) when is_list(parameters) do
     # IO.inspect(name)
     # IO.inspect(context)
 

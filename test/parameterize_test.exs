@@ -27,6 +27,34 @@ defmodule ParameterizeTest do
     end) =~ "\n2 tests, 1 failure\n"
   end
 
+  test "parameterized test with context" do
+    defmodule SampleTest do
+      use ExUnit.Case
+      import Parameterize
+
+      setup do
+        {:ok, spam: "spam"}
+      end
+
+      parameterized_test "basic test with context", context, [
+        [a: 1, b: 2, expected: 3],
+        [a: 1, b: 2, expected: 4]
+      ] do
+        assert context[:spam] == "spam"
+        assert a + b == expected
+      end
+
+    end
+
+    ExUnit.Server.modules_loaded()
+    configure_and_reload_on_exit(colors: [enabled: false])
+
+    assert capture_io(fn ->
+      predictable_ex_unit_start([trace: true])
+      assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+    end) =~ "\n2 tests, 1 failure\n"
+  end
+
   test "generated names" do
     defmodule SampleTest do
       use ExUnit.Case
@@ -60,32 +88,76 @@ defmodule ParameterizeTest do
     end)
   end
 
-  test "error reporting" do
-    defmodule SampleTest do
-      use ExUnit.Case
-      import Parameterize
-      parameterized_test "name", [
-        [a: 1, b: 2],
-      ] do
-        assert a * a == b
-      end
-
+  defp fix_line_number({op, meta, operands}, delta) do
+    line_number = Keyword.get(meta, :line, nil)
+    case line_number do
+      nil -> {op, meta, operands}
+      _ ->
+        meta = Keyword.put(meta, :line, line_number + delta)
+        {op, meta, operands}
     end
+  end
+
+  defp fix_line_number(node, delta) do
+    node
+  end
+
+  defp get_linum_delta({_, meta, _}) do
+    1 - Keyword.get(meta, :line, 1)
+  end
+
+  defmacro renumber_lines(quoted) do
+    delta = get_linum_delta(quoted)
+    fix_linum_fn = fn (node) ->
+      fix_line_number(node, delta)
+    end
+    Macro.postwalk(quoted, fix_linum_fn)
+  end
+
+  test "error reporting and line numbers" do
+    renumber_lines(
+      defmodule SampleTest do  # line: 1
+        use ExUnit.Case  # line: 2
+        import Parameterize  # line: 3
+        parameterized_test "name", [  # line: 4
+          [a: 1, b: 2],  # line: 5
+        ] do  # line: 6
+          assert a * a == b  # line: 7
+        end  # line: 8
+      end  # line: 9
+    )
 
     ExUnit.Server.modules_loaded()
     configure_and_reload_on_exit(colors: [enabled: false])
 
     output = capture_io(fn ->
       predictable_ex_unit_start([trace: true])
-      # ExUnit.run()
       assert ExUnit.run() == %{failures: 1, skipped: 0, total: 1, excluded: 0}
     end)
     [
-      ~s<test/parameterize_test.exs:71:>,  # line number reported
+      ~s<test/parameterize_test.exs:7:>,  # line number correctly reported
       ~s<assert a * a == b>,  # the assertion is included
     ]
     |> Enum.map(fn line ->
       assert output  =~ line
+    end)
+  end
+
+  test "wrong invocation" do
+    output = capture_io(fn ->
+      assert_raise FunctionClauseError, "no function clause matching in Parameterize.parameterized_test/4", fn ->
+        renumber_lines(
+          defmodule SampleTest do
+            use ExUnit.Case
+            import Parameterize
+            parameterized_test "name", %{
+              "bad" => [a: 1, b: 2],
+            } do
+              assert a * a == b
+            end
+          end
+        )
+      end
     end)
   end
 
