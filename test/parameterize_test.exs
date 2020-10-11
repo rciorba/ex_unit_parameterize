@@ -33,14 +33,15 @@ defmodule ParameterizeTest do
       import Parameterize
 
       setup do
-        {:ok, spam: "spam"}
+        {:ok, spam: "spam", ham: "ham"}
       end
 
-      parameterized_test "basic test with context", context, [
+      parameterized_test "basic test with context", %{spam: spam_value} = context, [
         [a: 1, b: 2, expected: 3],
         [a: 1, b: 2, expected: 4]
       ] do
-        assert context[:spam] == "spam"
+        assert spam_value == "spam"
+        assert context[:ham] == "ham"
         assert a + b == expected
       end
 
@@ -64,6 +65,7 @@ defmodule ParameterizeTest do
         {:explicit_id, [a: 1, b: "2"]},
         [a: 1, b: [c: 2, d: 3], c: %{e: "f"}],
         [long: "qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnm"],
+        explicit_id2: [a: 1],
       ] do
         assert true
       end
@@ -75,7 +77,7 @@ defmodule ParameterizeTest do
 
     output = capture_io(fn ->
       predictable_ex_unit_start([trace: true])
-      assert ExUnit.run() == %{failures: 0, skipped: 0, total: 4, excluded: 0}
+      assert ExUnit.run() == %{failures: 0, skipped: 0, total: 5, excluded: 0}
     end)
     [
       ~s<* test name[a: 1, b: "2"]>,
@@ -150,7 +152,7 @@ defmodule ParameterizeTest do
           defmodule SampleTest do
             use ExUnit.Case
             import Parameterize
-            parameterized_test "name", %{
+            parameterized_test "name", %{  # map's aren't supported, we should have a kw list
               "bad" => [a: 1, b: 2],
             } do
               assert a * a == b

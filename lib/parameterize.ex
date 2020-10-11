@@ -1,71 +1,93 @@
 defmodule Parameterize do
   @moduledoc """
-  Documentation for `Parameterize`.
+  Parameterized tests for ExUnit.
+
+  Implements the parameterized_test macro for usage with ExUnit.
+
+  ## Examples:
+
+      defmodule ParameterizedTest do
+        parameterized_test "basic test", [
+          [a: 1, b: 1, expected: 2],                # basic test[a:1, b:1, expected:2]
+          one_plus_two: [a: 1, b: 2, expected: 3],  # basic test[one_plus_two]
+          failing_case: [a: 1, b: 2, expected: 4]   # basic test[failing_case]
+        ] do
+          assert a + b == expected
+        end
+      end
+
+  # Test naming
+
+  By default the string representation of the params will be appended to the test name, unless you
+  provide an explicit name.
+
+  For the example above the test names would be:
+    * basic test[a: 1, b: 1, expected: 2]
+    * basic test[one_plus_two]
+    * basic test[failing_case]
+
+  In case the name would be longer than the max atom size, the 1-based index will be used.
   """
 
   require ExUnit.Case
 
   defp drop_do(block) do
-    # IO.puts("block:")
-    # IO.inspect(block)
     case block do
       [do: subblock] -> subblock
     end
   end
 
   defp extract_test_content(block) do
-    # IO.inspect(block)
     case block do
-      {:__block__, line_info, content} when is_list(content) -> {line_info, content}
-      content when is_tuple(content) -> {[], [content]}
+      {:__block__, _line_info, content} when is_list(content) -> content
+      content when is_tuple(content) -> [content]
     end
   end
 
-  defp prepend_to_content(prefix, content, line_info) do
+  defp prepend_to_content(content, line_info, prefix) do
     {:__block__, line_info, prefix ++ content}
   end
 
-  defp var_reference(var) do
-    {:ok, ast} = Code.string_to_quoted(to_string(var))
-    ast
-  end
-
-  defp make_assigns_block(values, line_info) do
-    # IO.inspect(values)
+  @doc """
+  Take the parameters and generate the variable asignments to inject values in to the parameterized
+  test.
+  """
+  defp make_assigns_block(parameters, line_info) do
     line_num = Keyword.get(line_info, :line, 1)
-    # IO.puts("=====")
-    # value = Macro.expand(values, __ENV__) |> IO.inspect
-    # {values, _} = Code.eval_quoted(values)
-    # IO.inspect(values)
-    # IO.puts("=====")
-    # IO.inspect(values)
-    # IO.puts("=====")
-    # Enum.map(values, fn {key, val} ->
-    #   quote do: unquote(var_reference(key)) = unquote(Macro.expand(val, __ENV__))
-    # end)
-    values
+    parameters
     |> Enum.map(fn {key, val} ->
       {:=, [line: line_num], [{key, [line: line_num], nil}, val]}
     end)
-    # |> IO.inspect
   end
 
+  @doc """
+  Prepend variable assignments to code block.
+  """
   defp inject_assigns(values_map, block, line_info) do
-    {_block_line_info, content} =
-      block
-      |> drop_do
-      |> extract_test_content
-
-    prepend_to_content(make_assigns_block(values_map, line_info), content, line_info)
+    block
+    |> drop_do
+    |> extract_test_content
+    |> prepend_to_content(line_info, make_assigns_block(values_map, line_info))
   end
 
-  def unpack({id, values}), do: {"[#{id}]", values}
+  @doc """
+  Generate an id from the string represetation of the values.
+  """
+  defp unpack_id_and_values(id_and_values_tuple)
+  defp unpack_id_and_values({id, values}) do
+    {"[#{id}]", values}
+  end
 
-  def unpack(values) do
+  defp unpack_id_and_values(values) do
     id = Macro.to_string(values)
     {id, values}
   end
 
+  @doc """
+  Generate a name for the parametrized test.
+
+  If the test name is too long, use numeric index instead of the id.
+  """
   defp make_name(base_name, id, index) do
     name = "#{base_name}#{id}"
 
@@ -76,47 +98,73 @@ defmodule Parameterize do
     end
   end
 
-  defmacro parameterized_test(name, context, parameters, block) when is_list(parameters) do
-    # IO.inspect(name)
-    # IO.inspect(context)
+  @doc """
+  Defines a parametrized test, with context.
 
-    # IO.inspect(parameters)
-    # IO.inspect("++++++++++++++")
-    # IO.inspect(block)
-    # IO.puts("--------------")
+  Generates several tests from the parameters list.
+
+  The `var`, will pattern match on the test context. For more information on contexts, see
+  `ExUnit.Callbacks`.
+
+  See also `ExUnit.Case.test/3`.
+
+  ## Example:
+
+      parameterized_test "basic test with context", %{spam: spam_value} = context, [
+        [a: 1, b: 2, expected: 3],
+        [a: 1, b: 2, expected: 4]
+      ] do
+        assert spam_value == "spam"
+        assert context[:ham] == "ham"
+        assert a + b == expected
+      end
+
+  """
+  defmacro parameterized_test(name, var, parameters, block) when is_list(parameters) do
     for {param, index} <- Enum.with_index(parameters, 1) do
-      {id, values} = unpack(param)
+      {id, values} = unpack_id_and_values(param)
       name = make_name(name, id, index)
       block = inject_assigns(values, block, [line: __CALLER__.line])
-      # IO.inspect(block)
 
-      ast =
-        quote do
-          test unquote(name), unquote(context) do
-            unquote(block)
-          end
+      quote do
+        test unquote(name), unquote(var) do
+          unquote(block)
         end
-
-      # IO.puts("============")
-      # IO.inspect(ast)
-      # IO.write([Macro.to_string(ast), "\n"])
-      # expanded = Macro.expand(ast, __ENV__)
-      # IO.puts(">>>>>>>>>>>>>")
-      # IO.write([Macro.to_string(expanded), '\n'])
-      # # IO.puts("")
-      # expanded
+      end
     end
   end
 
+  @doc """
+  Defines a parameterized test.
+
+  Generates several tests from the parameters list.
+
+  See also `ExUnit.Case.test/3`.
+
+  ## Examples
+
+      parameterized_test "basic test", [
+        ok_case: [a: 1, b: 2, expected: 3],
+        failing_case: [a: 1, b: 2, expected: 4]
+      ] do
+        assert a + b == expected
+  """
   defmacro parameterized_test(name, parameters, block) do
     quote do
       parameterized_test(unquote(name), _, unquote(parameters), unquote(block))
     end
   end
 
+  @doc """
+  Defines not implemented parameterized test.
+
+  These tests will fail as `Not implemented`.
+
+  See also `ExUnit.Case.test/1`.
+  """
   defmacro parameterized_test(name, parameters) do
     for {param, index} <- Enum.with_index(parameters) do
-      {id, values} = unpack(param)
+      {id, _values} = unpack_id_and_values(param)
       name = make_name(name, id, index)
 
       quote do
