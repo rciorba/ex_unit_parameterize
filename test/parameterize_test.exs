@@ -5,7 +5,7 @@ defmodule ParameterizeTest do
   import ExUnit.CaptureIO
 
   test "parameterized test" do
-    defmodule SampleTest do
+    defmodule ParametrizedCase do
       use ExUnit.Case
       import Parameterize
 
@@ -18,7 +18,7 @@ defmodule ParameterizeTest do
 
     end
 
-    ExUnit.Server.modules_loaded()
+    ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
     assert capture_io(fn ->
@@ -28,7 +28,7 @@ defmodule ParameterizeTest do
   end
 
   test "parameterized test with context" do
-    defmodule SampleTest do
+    defmodule ParametrizedCaseWithContext do
       use ExUnit.Case
       import Parameterize
 
@@ -46,7 +46,7 @@ defmodule ParameterizeTest do
 
     end
 
-    ExUnit.Server.modules_loaded()
+    ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
     assert capture_io(fn ->
@@ -56,21 +56,21 @@ defmodule ParameterizeTest do
   end
 
   test "generated names" do
-    defmodule SampleTest do
+    defmodule GeneratedNamesCase do
       use ExUnit.Case
       import Parameterize
       parameterized_test "name", [
-        [a: 1, b: "2"],
-        {:explicit_id, [a: 1, b: "2"]},
+        [a: 1, b: "2", c: 3],
+        {:explicit_id, [a: 1, b: "2", c: 3]},
         [a: 1, b: [c: 2, d: 3], c: %{e: "f"}],
-        [long: "qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnm"],
+        [a: 1, b: "long qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnm", c: 3],
       ] do
+        _ = {a, b, c}  # prevent warnings about unused variables
         assert true
       end
-
     end
 
-    ExUnit.Server.modules_loaded()
+    ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
     output = capture_io(fn ->
@@ -78,7 +78,7 @@ defmodule ParameterizeTest do
       assert ExUnit.run() == %{failures: 0, skipped: 0, total: 4, excluded: 0}
     end)
     [
-      ~s<* test name[a: 1, b: "2"]>,
+      ~s<* test name[a: 1, b: "2", c: 3]>,
       ~s<* test name[explicit_id]>,
       ~s<* test name[a: 1, b: [c: 2, d: 3], c: %{e: "f"}]>,
       ~s<* test name[4]>,
@@ -98,7 +98,7 @@ defmodule ParameterizeTest do
     end
   end
 
-  defp fix_line_number(node, delta) do
+  defp fix_line_number(node, _delta) do
     node
   end
 
@@ -106,7 +106,12 @@ defmodule ParameterizeTest do
     1 - Keyword.get(meta, :line, 1)
   end
 
-  defmacro renumber_lines(quoted) do
+  defmacrop renumber_lines(quoted) do
+    # Rewrite line numbers for modules defines within the tests
+    # since we assert on test output including line numbers.
+
+    # If we don't use this line number expected in assertions change when
+    # we add/change unrelated tests.
     delta = get_linum_delta(quoted)
     fix_linum_fn = fn (node) ->
       fix_line_number(node, delta)
@@ -116,10 +121,10 @@ defmodule ParameterizeTest do
 
   test "error reporting and line numbers" do
     renumber_lines(
-      defmodule SampleTest do  # line: 1
+      defmodule LineNumbersCase do  # line: 1
         use ExUnit.Case  # line: 2
         import Parameterize  # line: 3
-        parameterized_test "name", [  # line: 4
+        parameterized_test "line numbers", [  # line: 4
           [a: 1, b: 2],  # line: 5
         ] do  # line: 6
           assert a * a == b  # line: 7
@@ -127,7 +132,7 @@ defmodule ParameterizeTest do
       end  # line: 9
     )
 
-    ExUnit.Server.modules_loaded()
+    ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
     output = capture_io(fn ->
@@ -144,10 +149,10 @@ defmodule ParameterizeTest do
   end
 
   test "wrong invocation" do
-    output = capture_io(fn ->
+    capture_io(fn ->
       assert_raise FunctionClauseError, "no function clause matching in Parameterize.parameterized_test/4", fn ->
         renumber_lines(
-          defmodule SampleTest do
+          defmodule WrongInvocationCase do
             use ExUnit.Case
             import Parameterize
             parameterized_test "name", %{

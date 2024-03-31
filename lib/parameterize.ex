@@ -25,10 +25,10 @@ defmodule Parameterize do
     {:__block__, line_info, prefix ++ content}
   end
 
-  defp var_reference(var) do
-    {:ok, ast} = Code.string_to_quoted(to_string(var))
-    ast
-  end
+  # defp var_reference(var) do
+  #   {:ok, ast} = Code.string_to_quoted(to_string(var))
+  #   ast
+  # end
 
   defp make_assigns_block(values, line_info) do
     # IO.inspect(values)
@@ -105,8 +105,20 @@ defmodule Parameterize do
       # IO.write([Macro.to_string(expanded), '\n'])
       # # IO.puts("")
       # expanded
+      ast
     end
   end
+
+  # defmacro parameterized_test(name, context, parameters, block) when is_list(parameters) do
+  #   ast = quote do
+  #     parameterized_test_foo(unquote(name), unquote(context), unquote(parameters), unquote(block))
+  #   end
+  #   expanded = Macro.expand(ast, __ENV__)
+  #   IO.puts("=====")
+  #   IO.inspect(expanded)
+  #   IO.puts("=====")
+  #   ast
+  # end
 
   defmacro parameterized_test(name, parameters, block) do
     quote do
@@ -116,7 +128,7 @@ defmodule Parameterize do
 
   defmacro parameterized_test(name, parameters) do
     for {param, index} <- Enum.with_index(parameters) do
-      {id, values} = unpack(param)
+      {id, _values} = unpack(param)
       name = make_name(name, id, index)
 
       quote do
