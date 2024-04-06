@@ -1,6 +1,24 @@
-# Parameterize
+# ExUnitParametrize
+![tests](https://github.com/rciorba/yapara/actions/workflows/test.yaml/badge.svg?branch=master)
 
-**TODO: Add description**
+Parameterized tests for ExUnit.
+
+Examples:
+
+```elixir
+defmodule ParameterizedCase do
+  use ExUnit.Case
+  import ExUnitParameterize
+
+  parameterized_test "basic test", [
+    [a: 1, b: 2, expected: 3],
+    [a: 1, b: 2, expected: 4]
+  ] do
+    assert a + b == expected
+  end
+
+end
+```
 
 ## Installation
 

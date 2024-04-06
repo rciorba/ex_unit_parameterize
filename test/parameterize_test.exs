@@ -1,13 +1,13 @@
 defmodule ParameterizeTest do
   use ExUnit.Case
-  doctest Parameterize
+  doctest ExUnitParametrize
 
   import ExUnit.CaptureIO
 
   test "parameterized test" do
-    defmodule ParametrizedCase do
+    defmodule ParameterizedCase do
       use ExUnit.Case
-      import Parameterize
+      import ExUnitParametrize
 
       parameterized_test "basic test", [
         [a: 1, b: 2, expected: 3],
@@ -28,9 +28,9 @@ defmodule ParameterizeTest do
   end
 
   test "parameterized test with context" do
-    defmodule ParametrizedCaseWithContext do
+    defmodule ParameterizedCaseWithContext do
       use ExUnit.Case
-      import Parameterize
+      import ExUnitParametrize
 
       setup do
         {:ok, spam: "spam"}
@@ -55,19 +55,76 @@ defmodule ParameterizeTest do
     end) =~ "\n2 tests, 1 failure\n"
   end
 
-  test "generated names" do
-    defmodule GeneratedNamesCase do
+  test "tags with explicit context" do
+    defmodule ParameterizedCaseWithTagsAndContext do
       use ExUnit.Case
-      import Parameterize
-      parameterized_test "name", [
-        [a: 1, b: "2", c: 3],
-        {:explicit_id, [a: 1, b: "2", c: 3]},
-        [a: 1, b: [c: 2, d: 3], c: %{e: "f"}],
-        [a: 1, b: "long qwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnmqwertyuiopasdfghjklzxcvbnm", c: 3],
-      ] do
-        _ = {a, b, c}  # prevent warnings about unused variables
-        assert true
+      import ExUnitParametrize
+
+      setup do
+        {:ok, spam: "spam"}
       end
+
+      @tag foo_tag: "foo"
+      @tag :bar_tag
+      parameterized_test "basic test with tags and context", context, [
+        [a: 1, b: 2, expected: 3],
+        [a: 1, b: 2, expected: 4]
+      ] do
+        assert context[:foo_tag] == "foo"
+        assert context[:bar_tag] == true
+        assert context[:spam] == "spam"
+        assert a + b == expected
+      end
+
+    end
+
+    ExUnit.Server.modules_loaded(false)
+    configure_and_reload_on_exit(colors: [enabled: false])
+
+    assert capture_io(fn ->
+      predictable_ex_unit_start([trace: true])
+      assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+    end) =~ "\n2 tests, 1 failure\n"
+  end
+
+  test "tags with setup and no context" do
+    defmodule ParameterizedCaseWithTags do
+      use ExUnit.Case
+      import ExUnitParametrize
+
+      setup context do
+        assert context[:foo_tag] == "foo"
+        context
+      end
+
+      @tag foo_tag: "foo"
+      @tag :bar_tag
+      parameterized_test "test with tags", [
+        [a: 1, b: 2, expected: 3],
+        [a: 1, b: 2, expected: 4]
+      ] do
+        assert a + b == expected
+      end
+
+    end
+
+    ExUnit.Server.modules_loaded(false)
+    configure_and_reload_on_exit(colors: [enabled: false])
+
+    assert capture_io(fn ->
+      predictable_ex_unit_start([trace: true])
+      assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+    end) =~ "\n2 tests, 1 failure\n"
+  end
+
+  test "not implemented" do
+    defmodule NotImplementedCase do
+      use ExUnit.Case
+      import ExUnitParametrize
+      parameterized_test "name", [
+        [a: 1],
+        [a: 2],
+      ]
     end
 
     ExUnit.Server.modules_loaded(false)
@@ -75,13 +132,11 @@ defmodule ParameterizeTest do
 
     output = capture_io(fn ->
       predictable_ex_unit_start([trace: true])
-      assert ExUnit.run() == %{failures: 0, skipped: 0, total: 4, excluded: 0}
+      assert ExUnit.run() == %{failures: 2, skipped: 0, total: 2, excluded: 0}
     end)
     [
-      ~s<* test name[a: 1, b: "2", c: 3]>,
-      ~s<* test name[explicit_id]>,
-      ~s<* test name[a: 1, b: [c: 2, d: 3], c: %{e: "f"}]>,
-      ~s<* test name[4]>,
+      ~s<* test name[a: 1]>,
+      ~s<* test name[a: 2]>,
     ]
     |> Enum.map(fn name ->
       assert output  =~ name
@@ -123,7 +178,7 @@ defmodule ParameterizeTest do
     renumber_lines(
       defmodule LineNumbersCase do  # line: 1
         use ExUnit.Case  # line: 2
-        import Parameterize  # line: 3
+        import ExUnitParametrize  # line: 3
         parameterized_test "line numbers", [  # line: 4
           [a: 1, b: 2],  # line: 5
         ] do  # line: 6
@@ -150,11 +205,11 @@ defmodule ParameterizeTest do
 
   test "wrong invocation" do
     capture_io(fn ->
-      assert_raise FunctionClauseError, "no function clause matching in Parameterize.parameterized_test/4", fn ->
+      assert_raise FunctionClauseError, "no function clause matching in ExUnitParametrize.parameterized_test/4", fn ->
         renumber_lines(
           defmodule WrongInvocationCase do
             use ExUnit.Case
-            import Parameterize
+            import ExUnitParametrize
             parameterized_test "name", %{
               "bad" => [a: 1, b: 2],
             } do

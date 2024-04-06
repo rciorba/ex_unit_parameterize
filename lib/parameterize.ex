@@ -1,6 +1,32 @@
-defmodule Parameterize do
+defmodule ExUnitParametrize do
   @moduledoc """
-  Documentation for `Parameterize`.
+  Parameterized tests for ExUnit.
+
+  Provides the `parameterized_test` macro, implementing test parameterization for ExUnit.
+
+  The `parameterized_test` macro relies on the `ExUnit.Case.test` macro, and should support all the same use-cases.
+  Please file an issue if you find use-cases of test which parameterized_test doesn't handle.
+
+  Note on spelling: Unfortunately, parameterize has many spellings, and there's no one single
+  "correct" one. I've picked parameterize over parameterise, parametrize or parametrise, simply
+  because it seems to be slightly more popular globally.
+
+  Examples:
+
+  ```elixir
+  defmodule ParameterizedCase do
+    use ExUnit.Case
+    import ExUnitParametrize
+
+    parameterized_test "basic test", [
+      [a: 1, b: 2, expected: 3],
+      [a: 1, b: 2, expected: 4]
+    ] do
+      assert a + b == expected
+    end
+
+  end
+  ```
   """
 
   require ExUnit.Case
@@ -59,9 +85,9 @@ defmodule Parameterize do
     prepend_to_content(make_assigns_block(values_map, line_info), content, line_info)
   end
 
-  def unpack({id, values}), do: {"[#{id}]", values}
+  defp unpack({id, values}), do: {"[#{id}]", values}
 
-  def unpack(values) do
+  defp unpack(values) do
     id = Macro.to_string(values)
     {id, values}
   end
@@ -76,6 +102,63 @@ defmodule Parameterize do
     end
   end
 
+  @doc """
+  Defines a parameterized test.
+
+  See `ExUnit.Case.test/3`.
+
+  Examples:
+  ```elixir
+  defmodule ParameterizedCase do
+    use ExUnit.Case
+    import ExUnitParametrize
+
+    parameterized_test "basic test", [
+      [a: 1, b: 2, expected: 3],
+      [a: 1, b: 2, expected: 4]
+    ] do
+      assert a + b == expected
+    end
+
+  end
+  ```
+  """
+  defmacro parameterized_test(name, parameters, block) do
+    quote do
+      parameterized_test(unquote(name), _, unquote(parameters), unquote(block))
+    end
+  end
+
+  @doc """
+  Defines a parameterized test that uses the test context.
+
+  See `ExUnit.Case.test/3` and [ExUnit.Case#module-context](`m:ExUnit.Case#module-context`)
+
+  Examples:
+  ```elixir
+  defmodule ParameterizedCaseWithTagsAndContext do
+    use ExUnit.Case
+    import ExUnitParametrize
+
+    setup do
+      {:ok, spam: "spam"}
+    end
+
+    @tag foo_tag: "foo"
+    @tag :bar_tag
+    parameterized_test "basic test with tags and context", context, [
+      [a: 1, b: 2, expected: 3],
+      [a: 1, b: 2, expected: 4]
+    ] do
+      assert context[:foo_tag] == "foo"
+      assert context[:bar_tag] == true
+      assert context[:spam] == "spam"
+      assert a + b == expected
+    end
+
+  end
+  ```
+  """
   defmacro parameterized_test(name, context, parameters, block) when is_list(parameters) do
     # IO.inspect(name)
     # IO.inspect(context)
@@ -120,12 +203,23 @@ defmodule Parameterize do
   #   ast
   # end
 
-  defmacro parameterized_test(name, parameters, block) do
-    quote do
-      parameterized_test(unquote(name), _, unquote(parameters), unquote(block))
-    end
-  end
+  @doc """
+  Defines a not implemented test with a string.
 
+  See `ExUnit.Case.test/1`.
+
+  Examples
+  ```elixir
+  defmodule NotImplementedCase do
+    use ExUnit.Case
+    import ExUnitParametrize
+    parameterized_test "name", [
+      [a: 1],
+      [a: 2],
+    ]
+  end
+  ```
+  """
   defmacro parameterized_test(name, parameters) do
     for {param, index} <- Enum.with_index(parameters) do
       {id, _values} = unpack(param)
