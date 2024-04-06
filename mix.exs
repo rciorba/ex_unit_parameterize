@@ -1,10 +1,10 @@
-defmodule ExUnitParametrize.MixProject do
+defmodule ExUnitParameterize.MixProject do
   use Mix.Project
 
   def project do
     [
       app: :ex_unit_parameterize,
-      version: "0.1.0-alpha.1",
+      version: "0.1.0-alpha.2",
       elixir: "~> 1.14",
       deps: deps(),
       package: [
@@ -15,7 +15,7 @@ defmodule ExUnitParametrize.MixProject do
       ],
       description: description(),
       # Docs
-      name: "ExUnitParametrize",
+      name: "ExUnitParameterize",
       source_url: "https://github.com/rciorba/ex_unit_parameterize",
       homepage_url: "https://github.com/rciorba/ex_unit_parameterize",
       docs: [
@@ -29,7 +29,7 @@ defmodule ExUnitParametrize.MixProject do
   def application, do: []
 
   defp description() do
-    "Parametrized tests for ExUnit."
+    "Parameterized tests for ExUnit."
   end
 
   # Run "mix help deps" to learn about dependencies.

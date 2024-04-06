@@ -1,4 +1,4 @@
-# ExUnitParametrize
+# ExUnitParameterize
 ![tests](https://github.com/rciorba/yapara/actions/workflows/test.yaml/badge.svg?branch=master)
 
 Parameterized tests for ExUnit.
@@ -8,7 +8,7 @@ Examples:
 ```elixir
 defmodule ParameterizedTest do
   use ExUnit.Case
-  import ExUnitParametrize
+  import ExUnitParameterize
 
   parameterized_test "basic test", [
     [a: 1, b: 1, expected: 2],                # basic test[a:1, b:1, expected:2]
@@ -40,7 +40,7 @@ because it seems to be slightly more popular globally.
 
 ## Installation
 
-ExUnitParametrize can be installed by adding `ex_unit_parameterize` to your list of dependencies in `mix.exs`:
+ExUnitParameterize can be installed by adding `ex_unit_parameterize` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do

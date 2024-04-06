@@ -1,13 +1,13 @@
 defmodule ParameterizeTest do
   use ExUnit.Case
-  doctest ExUnitParametrize
+  doctest ExUnitParameterize
 
   import ExUnit.CaptureIO
 
   test "parameterized test" do
     defmodule ParameterizedCase do
       use ExUnit.Case
-      import ExUnitParametrize
+      import ExUnitParameterize
 
       parameterized_test "basic test", [
         [a: 1, b: 2, expected: 3],
@@ -29,7 +29,7 @@ defmodule ParameterizeTest do
   test "parameterized test with context" do
     defmodule ParameterizedCaseWithContext do
       use ExUnit.Case
-      import ExUnitParametrize
+      import ExUnitParameterize
 
       setup do
         {:ok, spam: "spam"}
@@ -56,7 +56,7 @@ defmodule ParameterizeTest do
   test "tags with explicit context" do
     defmodule ParameterizedCaseWithTagsAndContext do
       use ExUnit.Case
-      import ExUnitParametrize
+      import ExUnitParameterize
 
       setup do
         {:ok, spam: "spam"}
@@ -87,7 +87,7 @@ defmodule ParameterizeTest do
   test "tags with setup and no context" do
     defmodule ParameterizedCaseWithTags do
       use ExUnit.Case
-      import ExUnitParametrize
+      import ExUnitParameterize
 
       setup context do
         assert context[:foo_tag] == "foo"
@@ -116,7 +116,7 @@ defmodule ParameterizeTest do
   test "not implemented" do
     defmodule NotImplementedCase do
       use ExUnit.Case
-      import ExUnitParametrize
+      import ExUnitParameterize
 
       parameterized_test("name", [
         [a: 1],
@@ -182,7 +182,7 @@ defmodule ParameterizeTest do
     renumber_lines(
       defmodule LineNumbersCase do  # line: 1
         use ExUnit.Case  # line: 2
-        import ExUnitParametrize  # line: 3
+        import ExUnitParameterize  # line: 3
         parameterized_test "line numbers", [  # line: 4
           [a: 1, b: 2],  # line: 5
         ] do  # line: 6
@@ -211,11 +211,11 @@ defmodule ParameterizeTest do
 
   test "wrong invocation" do
     capture_io(fn ->
-      assert_raise FunctionClauseError, "no function clause matching in ExUnitParametrize.parameterized_test/4", fn ->
+      assert_raise FunctionClauseError, "no function clause matching in ExUnitParameterize.parameterized_test/4", fn ->
         renumber_lines(
           defmodule WrongInvocationCase do
             use ExUnit.Case
-            import ExUnitParametrize
+            import ExUnitParameterize
             parameterized_test "name", %{
               "bad" => [a: 1, b: 2],
             } do

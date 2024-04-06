@@ -1,4 +1,4 @@
-defmodule ExUnitParametrize do
+defmodule ExUnitParameterize do
   @moduledoc """
   Parameterized tests for ExUnit.
 
@@ -12,7 +12,7 @@ defmodule ExUnitParametrize do
 
       defmodule ParameterizedTest do
         use ExUnit.Case
-        import ExUnitParametrize
+        import ExUnitParameterize
 
         parameterized_test "basic test", [
           [a: 1, b: 1, expected: 2],                # basic test[a:1, b:1, expected:2]
@@ -98,7 +98,7 @@ defmodule ExUnitParametrize do
 
       defmodule ParameterizedCase do
         use ExUnit.Case
-        import ExUnitParametrize
+        import ExUnitParameterize
 
         parameterized_test "basic test", [
           [a: 1, b: 2, expected: 3],
@@ -124,7 +124,7 @@ defmodule ExUnitParametrize do
 
       defmodule ParameterizedCaseWithTagsAndContext do
         use ExUnit.Case
-        import ExUnitParametrize
+        import ExUnitParameterize
 
         setup do
           {:ok, spam: "spam"}
@@ -170,7 +170,7 @@ defmodule ExUnitParametrize do
 
       defmodule NotImplementedCase do
         use ExUnit.Case
-        import ExUnitParametrize
+        import ExUnitParameterize
         parameterized_test "name", [
           [a: 1],
           [a: 2],
