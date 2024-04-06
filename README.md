@@ -6,34 +6,48 @@ Parameterized tests for ExUnit.
 Examples:
 
 ```elixir
-defmodule ParameterizedCase do
+defmodule ParameterizedTest do
   use ExUnit.Case
-  import ExUnitParameterize
+  import ExUnitParametrize
 
   parameterized_test "basic test", [
-    [a: 1, b: 2, expected: 3],
-    [a: 1, b: 2, expected: 4]
+    [a: 1, b: 1, expected: 2],                # basic test[a:1, b:1, expected:2]
+    one_plus_two: [a: 1, b: 2, expected: 3],  # basic test[one_plus_two]
+    failing_case: [a: 1, b: 2, expected: 4]   # basic test[failing_case]
   ] do
     assert a + b == expected
   end
-
 end
+
 ```
+
+## Test naming
+
+By default the string representation of the params will be appended to the test name, unless you
+provide an explicit name.
+
+For the example above the test names would be:
+  * basic test[a: 1, b: 1, expected: 2]
+  * basic test[one_plus_two]
+  * basic test[failing_case]
+
+In case the name would be longer than the max atom size, the 1-based index will be used.
+
+### Note on spelling
+Unfortunately, parameterize has many spellings, and there's no one single
+"correct" one. I've picked parameterize over parameterise, parametrize or parametrise, simply
+because it seems to be slightly more popular globally.
 
 ## Installation
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed
-by adding `parameterize` to your list of dependencies in `mix.exs`:
+ExUnitParametrize can be installed by adding `ex_unit_parameterize` to your list of dependencies in `mix.exs`:
 
 ```elixir
 def deps do
   [
-    {:parameterize, "~> 0.1.0"}
+    {:ex_unit_parameterize, "~> 0.1.0"}
   ]
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/parameterize](https://hexdocs.pm/parameterize).
-
+The docs can be found at [https://hexdocs.pm/ex_unit_parameterize](https://hexdocs.pm/ex_unit_parameterize).

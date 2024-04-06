@@ -15,16 +15,15 @@ defmodule ParameterizeTest do
       ] do
         assert a + b == expected
       end
-
     end
 
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
     assert capture_io(fn ->
-      predictable_ex_unit_start([trace: true])
-      assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
-    end) =~ "\n2 tests, 1 failure\n"
+             predictable_ex_unit_start(trace: true)
+             assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+           end) =~ "\n2 tests, 1 failure\n"
   end
 
   test "parameterized test with context" do
@@ -43,16 +42,15 @@ defmodule ParameterizeTest do
         assert context[:spam] == "spam"
         assert a + b == expected
       end
-
     end
 
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
     assert capture_io(fn ->
-      predictable_ex_unit_start([trace: true])
-      assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
-    end) =~ "\n2 tests, 1 failure\n"
+             predictable_ex_unit_start(trace: true)
+             assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+           end) =~ "\n2 tests, 1 failure\n"
   end
 
   test "tags with explicit context" do
@@ -75,16 +73,15 @@ defmodule ParameterizeTest do
         assert context[:spam] == "spam"
         assert a + b == expected
       end
-
     end
 
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
     assert capture_io(fn ->
-      predictable_ex_unit_start([trace: true])
-      assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
-    end) =~ "\n2 tests, 1 failure\n"
+             predictable_ex_unit_start(trace: true)
+             assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+           end) =~ "\n2 tests, 1 failure\n"
   end
 
   test "tags with setup and no context" do
@@ -105,48 +102,53 @@ defmodule ParameterizeTest do
       ] do
         assert a + b == expected
       end
-
     end
 
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
     assert capture_io(fn ->
-      predictable_ex_unit_start([trace: true])
-      assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
-    end) =~ "\n2 tests, 1 failure\n"
+             predictable_ex_unit_start(trace: true)
+             assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+           end) =~ "\n2 tests, 1 failure\n"
   end
 
   test "not implemented" do
     defmodule NotImplementedCase do
       use ExUnit.Case
       import ExUnitParametrize
-      parameterized_test "name", [
+
+      parameterized_test("name", [
         [a: 1],
-        [a: 2],
-      ]
+        [a: 2]
+      ])
     end
 
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
-    output = capture_io(fn ->
-      predictable_ex_unit_start([trace: true])
-      assert ExUnit.run() == %{failures: 2, skipped: 0, total: 2, excluded: 0}
-    end)
+    output =
+      capture_io(fn ->
+        predictable_ex_unit_start(trace: true)
+        assert ExUnit.run() == %{failures: 2, skipped: 0, total: 2, excluded: 0}
+      end)
+
     [
       ~s<* test name[a: 1]>,
-      ~s<* test name[a: 2]>,
+      ~s<* test name[a: 2]>
     ]
     |> Enum.map(fn name ->
-      assert output  =~ name
+      assert output =~ name
     end)
   end
 
   defp fix_line_number({op, meta, operands}, delta) do
     line_number = Keyword.get(meta, :line, nil)
+
     case line_number do
-      nil -> {op, meta, operands}
+      nil ->
+        {op, meta, operands}
+
       _ ->
         meta = Keyword.put(meta, :line, line_number + delta)
         {op, meta, operands}
@@ -168,9 +170,11 @@ defmodule ParameterizeTest do
     # If we don't use this line number expected in assertions change when
     # we add/change unrelated tests.
     delta = get_linum_delta(quoted)
-    fix_linum_fn = fn (node) ->
+
+    fix_linum_fn = fn node ->
       fix_line_number(node, delta)
     end
+
     Macro.postwalk(quoted, fix_linum_fn)
   end
 
@@ -190,16 +194,18 @@ defmodule ParameterizeTest do
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
-    output = capture_io(fn ->
-      predictable_ex_unit_start([trace: true])
-      assert ExUnit.run() == %{failures: 1, skipped: 0, total: 1, excluded: 0}
-    end)
+    output =
+      capture_io(fn ->
+        predictable_ex_unit_start(trace: true)
+        assert ExUnit.run() == %{failures: 1, skipped: 0, total: 1, excluded: 0}
+      end)
+
     [
       ~s<test/parameterize_test.exs:7:>,  # line number correctly reported
       ~s<assert a * a == b>,  # the assertion is included
     ]
     |> Enum.map(fn line ->
-      assert output  =~ line
+      assert output =~ line
     end)
   end
 
