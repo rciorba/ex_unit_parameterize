@@ -4,7 +4,7 @@ defmodule ExUnitParameterize.MixProject do
   def project do
     [
       app: :ex_unit_parameterize,
-      version: "0.1.0-alpha.2",
+      version: "0.1.0-alpha.3",
       elixir: "~> 1.14",
       deps: deps(),
       package: [
@@ -19,7 +19,8 @@ defmodule ExUnitParameterize.MixProject do
       source_url: "https://github.com/rciorba/ex_unit_parameterize",
       homepage_url: "https://github.com/rciorba/ex_unit_parameterize",
       docs: [
-        main: "readme", # The main page in the docs
+        # The main page in the docs
+        main: "readme",
         extras: ["README.md"]
       ]
     ]

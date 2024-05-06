@@ -57,6 +57,7 @@ defmodule ExUnitParameterize do
 
   defp make_assigns_block(values, line_info) do
     line_num = Keyword.get(line_info, :line, 1)
+
     values
     |> Enum.map(fn {key, val} ->
       {:=, [line: line_num], [{key, [line: line_num], nil}, val]}
@@ -90,32 +91,6 @@ defmodule ExUnitParameterize do
   end
 
   @doc """
-  Defines a parameterized test.
-
-  See `ExUnit.Case.test/3`.
-
-  ## Examples:
-
-      defmodule ParameterizedCase do
-        use ExUnit.Case
-        import ExUnitParameterize
-
-        parameterized_test "basic test", [
-          [a: 1, b: 2, expected: 3],
-          [a: 1, b: 2, expected: 4]
-        ] do
-          assert a + b == expected
-        end
-
-      end
-  """
-  defmacro parameterized_test(name, parameters, block) do
-    quote do
-      parameterized_test(unquote(name), _, unquote(parameters), unquote(block))
-    end
-  end
-
-  @doc """
   Defines a parameterized test that uses the test context.
 
   See `ExUnit.Case.test/3` and [ExUnit.Case#module-context](`m:ExUnit.Case#module-context`)
@@ -144,16 +119,17 @@ defmodule ExUnitParameterize do
 
       end
   """
-  defmacro parameterized_test(name, context, parameters, block) when is_list(parameters) do
+  defmacro parameterized_test(message, var \\ quote(do: _), parameters, contents)
+           when is_list(parameters) do
     for {param, index} <- Enum.with_index(parameters, 1) do
       {id, values} = unpack(param)
-      name = make_name(name, id, index)
-      block = inject_assigns(values, block, line: __CALLER__.line)
+      message = make_name(message, id, index)
+      contents = inject_assigns(values, contents, line: __CALLER__.line)
 
       ast =
         quote do
-          test unquote(name), unquote(context) do
-            unquote(block)
+          test unquote(message), unquote(var) do
+            unquote(contents)
           end
         end
 
@@ -177,13 +153,13 @@ defmodule ExUnitParameterize do
         ]
       end
   """
-  defmacro parameterized_test(name, parameters) do
+  defmacro parameterized_test(message, parameters) do
     for {param, index} <- Enum.with_index(parameters) do
       {id, _values} = unpack(param)
-      name = make_name(name, id, index)
+      message = make_name(message, id, index)
 
       quote do
-        test(unquote(name))
+        test(unquote(message))
       end
     end
   end
