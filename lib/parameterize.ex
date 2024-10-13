@@ -4,7 +4,8 @@ defmodule ExUnitParameterize do
 
   Provides the `parameterized_test` macro, implementing test parameterization for ExUnit.
 
-  The `parameterized_test` macro relies on the `ExUnit.Case.test` macro, and should support all the same use-cases.
+  The `parameterized_test` macro relies on the `ExUnit.Case.test` macro, and should support
+  all the same use-cases.
   Please file an issue if you find use-cases of test which parameterized_test doesn't handle.
 
 
@@ -73,12 +74,9 @@ defmodule ExUnitParameterize do
     prepend_to_content(make_assigns_block(values_map, line_info), content, line_info)
   end
 
-  defp unpack({id, values}), do: {"[#{id}]", values}
-
-  defp unpack(values) do
-    id = Macro.to_string(values)
-    {id, values}
-  end
+  # Get or generate the id for a given parameter.
+  defp get_or_make_test_id({id, values}), do: {"[#{id}]", values}
+  defp get_or_make_test_id(values), do: {Macro.to_string(values), values}
 
   defp make_name(base_name, id, index) do
     name = "#{base_name}#{id}"
@@ -87,6 +85,40 @@ defmodule ExUnitParameterize do
       "#{base_name}[#{index}]"
     else
       name
+    end
+  end
+
+  # Transform alternate parameter list format to keyword list.
+  defp to_keywordlist(vars, values) do
+    to_keywordlist(vars, values, [])
+  end
+
+  defp to_keywordlist([var | vars], [val | values], accumulator) do
+    to_keywordlist(vars, values, [{var, val} | accumulator])
+  end
+
+  defp to_keywordlist(vars, values, accumulator) do
+    cond do
+      vars != [] ->
+        raise "vars is longer than values: `#{vars}`"
+
+      values != [] ->
+        raise "values is longer than vars: `#{values}`"
+
+      true ->
+        accumulator
+    end
+  end
+
+  defp maybe_extract_var_names([]), do: {nil, []}
+
+  defp maybe_extract_var_names([params_or_var_names | tail]) do
+    case params_or_var_names do
+      [var_name | _] when is_atom(var_name) ->
+        {params_or_var_names, tail}
+
+      _ ->
+        {nil, [params_or_var_names | tail]}
     end
   end
 
@@ -119,11 +151,25 @@ defmodule ExUnitParameterize do
 
       end
   """
-  defmacro parameterized_test(message, var \\ quote(do: _), parameters, contents)
+  defmacro parameterized_test(
+             message,
+             var \\ quote(do: _),
+             parameters,
+             contents
+           )
            when is_list(parameters) do
+    {var_names, parameters} = maybe_extract_var_names(parameters)
+
     for {param, index} <- Enum.with_index(parameters, 1) do
-      {id, values} = unpack(param)
+      {id, values} = get_or_make_test_id(param)
       message = make_name(message, id, index)
+
+      values =
+        case var_names do
+          nil -> values
+          _ -> to_keywordlist(var_names, values)
+        end
+
       contents = inject_assigns(values, contents, line: __CALLER__.line)
 
       ast =
@@ -154,8 +200,10 @@ defmodule ExUnitParameterize do
       end
   """
   defmacro parameterized_test(message, parameters) do
+    {_vars, parameters} = maybe_extract_var_names(parameters)
+
     for {param, index} <- Enum.with_index(parameters) do
-      {id, _values} = unpack(param)
+      {id, _values} = get_or_make_test_id(param)
       message = make_name(message, id, index)
 
       quote do

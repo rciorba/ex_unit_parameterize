@@ -4,15 +4,16 @@ defmodule ParameterizeTest do
 
   import ExUnit.CaptureIO
 
-  # "run" anything registered tests, so state doesn't "leak" between tests.
-  # If a test defines a test-module and raises before running it, the next test will not have a clean slate.
   setup do
+    # "run" any registered tests, so state doesn't "leak" between tests.
+    # If a test defines a test-module and raises before running it, the next test
+    # will not have a clean slate.
     capture_io(fn -> ExUnit.run() end)
     :ok
   end
 
-  test "parameterized test" do
-    defmodule ParameterizedCase do
+  test "parameterized test, keywordlist interface" do
+    defmodule KeywordListInterface do
       use ExUnit.Case
       import ExUnitParameterize
 
@@ -30,15 +31,43 @@ defmodule ParameterizeTest do
     output =
       capture_io(fn ->
         predictable_ex_unit_start(trace: true)
-        ExUnit.run()
-        # assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+        assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
       end)
 
     assert output =~ "\n2 tests, 1 failure\n"
   end
 
-  test "parameterized test with context" do
-    defmodule ParameterizedCaseWithContext do
+  test "parameterized test, alternate interface" do
+    defmodule AlternateInterface do
+      use ExUnit.Case
+      import ExUnitParameterize
+
+      parameterized_test(
+        "basic test",
+        [
+          [:a, :b, :expected],
+          [1, 2, 3],
+          [1, 2, 4]
+        ]
+      ) do
+        assert a + b == expected
+      end
+    end
+
+    ExUnit.Server.modules_loaded(false)
+    configure_and_reload_on_exit(colors: [enabled: false])
+
+    output =
+      capture_io(fn ->
+        predictable_ex_unit_start(trace: true)
+        assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+      end)
+
+    assert output =~ "\n2 tests, 1 failure\n"
+  end
+
+  test "keywordlist interface with context" do
+    defmodule WithContext do
       use ExUnit.Case
       import ExUnitParameterize
 
@@ -67,8 +96,39 @@ defmodule ParameterizeTest do
     assert io =~ "\n2 tests, 1 failure\n"
   end
 
-  test "tags with explicit context" do
-    defmodule ParameterizedCaseWithTagsAndContext do
+  test "alternate interface parameterized test with context" do
+    defmodule AlternateInterfaceWithContext do
+      use ExUnit.Case
+      import ExUnitParameterize
+
+      setup do
+        {:ok, spam: "spam"}
+      end
+
+      parameterized_test "basic test with context", context, [
+        [:a, :b, :expected],
+        [1, 2, 3],
+        [1, 2, 4]
+      ] do
+        assert context[:spam] == "spam"
+        assert a + b == expected
+      end
+    end
+
+    ExUnit.Server.modules_loaded(false)
+    configure_and_reload_on_exit(colors: [enabled: false])
+
+    io =
+      capture_io(fn ->
+        predictable_ex_unit_start(trace: true)
+        assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+      end)
+
+    assert io =~ "\n2 tests, 1 failure\n"
+  end
+
+  test "tags with explicit context, keywordlist interface" do
+    defmodule KeywordlistInterfaceWithTagsAndContext do
       use ExUnit.Case
       import ExUnitParameterize
 
@@ -98,8 +158,40 @@ defmodule ParameterizeTest do
            end) =~ "\n2 tests, 1 failure\n"
   end
 
-  test "tags with setup and no context" do
-    defmodule ParameterizedCaseWithTags do
+  test "tags with explicit context, alternate interface" do
+    defmodule AlternateInterfaceWithTagsAndContext do
+      use ExUnit.Case
+      import ExUnitParameterize
+
+      setup do
+        {:ok, spam: "spam"}
+      end
+
+      @tag foo_tag: "foo"
+      @tag :bar_tag
+      parameterized_test "basic test with tags and context", context, [
+        [:a, :b, :expected],
+        [1, 2, 3],
+        [1, 2, 4]
+      ] do
+        assert context[:foo_tag] == "foo"
+        assert context[:bar_tag] == true
+        assert context[:spam] == "spam"
+        assert a + b == expected
+      end
+    end
+
+    ExUnit.Server.modules_loaded(false)
+    configure_and_reload_on_exit(colors: [enabled: false])
+
+    assert capture_io(fn ->
+             predictable_ex_unit_start(trace: true)
+             assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+           end) =~ "\n2 tests, 1 failure\n"
+  end
+
+  test "tags with setup and no context, keywordlist interface" do
+    defmodule KeywordlistInterfaceWithSetupAndNoContext do
       use ExUnit.Case
       import ExUnitParameterize
 
@@ -127,8 +219,38 @@ defmodule ParameterizeTest do
            end) =~ "\n2 tests, 1 failure\n"
   end
 
-  test "not implemented" do
-    defmodule NotImplementedCase do
+  test "tags with setup and no context, alternate interface" do
+    defmodule AlternateInterfaceWithSetupAndNoContext do
+      use ExUnit.Case
+      import ExUnitParameterize
+
+      setup context do
+        assert context[:foo_tag] == "foo"
+        context
+      end
+
+      @tag foo_tag: "foo"
+      @tag :bar_tag
+      parameterized_test "test with tags", [
+        [:a, :b, :expected],
+        [1, 2, 3],
+        [1, 2, 4]
+      ] do
+        assert a + b == expected
+      end
+    end
+
+    ExUnit.Server.modules_loaded(false)
+    configure_and_reload_on_exit(colors: [enabled: false])
+
+    assert capture_io(fn ->
+             predictable_ex_unit_start(trace: true)
+             assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+           end) =~ "\n2 tests, 1 failure\n"
+  end
+
+  test "not implemented, keywordlist interface" do
+    defmodule KeywordlistInterfaceNotImplemented do
       use ExUnit.Case
       import ExUnitParameterize
 
@@ -150,6 +272,36 @@ defmodule ParameterizeTest do
     [
       ~s<* test name[a: 1]>,
       ~s<* test name[a: 2]>
+    ]
+    |> Enum.map(fn name ->
+      assert output =~ name
+    end)
+  end
+
+  test "not implemented, alternate interface" do
+    defmodule AlternateInterfaceNotImplemented do
+      use ExUnit.Case
+      import ExUnitParameterize
+
+      parameterized_test("name", [
+        [:a],
+        [1],
+        [2]
+      ])
+    end
+
+    ExUnit.Server.modules_loaded(false)
+    configure_and_reload_on_exit(colors: [enabled: false])
+
+    output =
+      capture_io(fn ->
+        predictable_ex_unit_start(trace: true)
+        assert ExUnit.run() == %{failures: 2, skipped: 0, total: 2, excluded: 0}
+      end)
+
+    [
+      ~s<* test name[1]>,
+      ~s<* test name[2]>
     ]
     |> Enum.map(fn name ->
       assert output =~ name
@@ -215,8 +367,10 @@ defmodule ParameterizeTest do
       end)
 
     [
-      ~s<test/parameterize_test.exs:7:>,  # line number correctly reported
-      ~s<assert a * a == b>,  # the assertion is included
+      # line number correctly reported
+      ~s<test/parameterize_test.exs:7:>,
+      # the assertion is included
+      ~s<assert a * a == b>
     ]
     |> Enum.map(fn line ->
       assert output =~ line
