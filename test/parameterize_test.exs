@@ -28,13 +28,24 @@ defmodule ParameterizeTest do
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
-    output =
-      capture_io(fn ->
+    {result, output} =
+      with_io(fn ->
         predictable_ex_unit_start(trace: true)
-        assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+        ExUnit.run()
       end)
 
-    assert output =~ "\n2 tests, 1 failure\n"
+    assert result == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+
+    [
+      # check result output:
+      "\n2 tests, 1 failure\n",
+      # check naming:
+      "test basic test\[a: 1, b: 2, expected: 3\]",
+      "test basic test\[a: 1, b: 2, expected: 4\]"
+    ]
+    |> Enum.map(fn line ->
+      assert output =~ line
+    end)
   end
 
   test "parameterized test, alternate interface" do
@@ -57,13 +68,99 @@ defmodule ParameterizeTest do
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
-    output =
-      capture_io(fn ->
+    {result, output} =
+      with_io(fn ->
         predictable_ex_unit_start(trace: true)
-        assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+        ExUnit.run()
       end)
 
-    assert output =~ "\n2 tests, 1 failure\n"
+    assert result == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+
+    [
+      # check result output:
+      "\n2 tests, 1 failure\n",
+      # check naming:
+      "test basic test\[1, 2, 3\]",
+      "test basic test\[1, 2, 4\]"
+    ]
+    |> Enum.map(fn line ->
+      assert output =~ line
+    end)
+  end
+
+  test "explicit naming, keywordlist interface" do
+    defmodule ExplicitNamingKeywordListInterface do
+      use ExUnit.Case
+      import ExUnitParameterize
+
+      parameterized_test "basic test",
+        first: [a: 1, b: 2, expected: 3],
+        second: [a: 1, b: 2, expected: 4] do
+        assert a + b == expected
+      end
+    end
+
+    ExUnit.Server.modules_loaded(false)
+    configure_and_reload_on_exit(colors: [enabled: false])
+
+    {result, output} =
+      with_io(fn ->
+        predictable_ex_unit_start(trace: true)
+        ExUnit.run()
+      end)
+
+    assert result == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+
+    [
+      # check result output:
+      "\n2 tests, 1 failure\n",
+      # check naming:
+      "test basic test\[first\]",
+      "test basic test\[second\]"
+    ]
+    |> Enum.map(fn line ->
+      assert output =~ line
+    end)
+  end
+
+  test "explicit naming, alternate interface" do
+    defmodule ExplicitNamingAlternateInterface do
+      use ExUnit.Case
+      import ExUnitParameterize
+
+      parameterized_test(
+        "basic test",
+        [
+          [:a, :b, :expected],
+          first: [1, 2, 3],
+          second: [1, 2, 4]
+        ]
+      ) do
+        assert a + b == expected
+      end
+    end
+
+    ExUnit.Server.modules_loaded(false)
+    configure_and_reload_on_exit(colors: [enabled: false])
+
+    {result, output} =
+      with_io(fn ->
+        predictable_ex_unit_start(trace: true)
+        ExUnit.run()
+      end)
+
+    assert result == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+
+    [
+      # check result output:
+      "\n2 tests, 1 failure\n",
+      # check naming:
+      "test basic test\[first\]",
+      "test basic test\[second\]"
+    ]
+    |> Enum.map(fn line ->
+      assert output =~ line
+    end)
   end
 
   test "keywordlist interface with context" do
@@ -87,13 +184,24 @@ defmodule ParameterizeTest do
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
-    io =
-      capture_io(fn ->
+    {result, output} =
+      with_io(fn ->
         predictable_ex_unit_start(trace: true)
-        assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+        ExUnit.run()
       end)
 
-    assert io =~ "\n2 tests, 1 failure\n"
+    assert result == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+
+    [
+      # check result output:
+      "\n2 tests, 1 failure\n",
+      # check naming:
+      "test basic test with context\[a: 1, b: 2, expected: 3\]",
+      "test basic test with context\[a: 1, b: 2, expected: 4\]"
+    ]
+    |> Enum.map(fn line ->
+      assert output =~ line
+    end)
   end
 
   test "alternate interface parameterized test with context" do
@@ -118,13 +226,24 @@ defmodule ParameterizeTest do
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
-    io =
-      capture_io(fn ->
+    {result, output} =
+      with_io(fn ->
         predictable_ex_unit_start(trace: true)
-        assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+        ExUnit.run()
       end)
 
-    assert io =~ "\n2 tests, 1 failure\n"
+    assert result == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+
+    [
+      # check result output:
+      "\n2 tests, 1 failure\n",
+      # check naming:
+      "test basic test with context\[1, 2, 3\]",
+      "test basic test with context\[1, 2, 4\]"
+    ]
+    |> Enum.map(fn line ->
+      assert output =~ line
+    end)
   end
 
   test "tags with explicit context, keywordlist interface" do
@@ -152,10 +271,24 @@ defmodule ParameterizeTest do
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
-    assert capture_io(fn ->
-             predictable_ex_unit_start(trace: true)
-             assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
-           end) =~ "\n2 tests, 1 failure\n"
+    {result, output} =
+      with_io(fn ->
+        predictable_ex_unit_start(trace: true)
+        ExUnit.run()
+      end)
+
+    assert result == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+
+    [
+      # check result output:
+      "\n2 tests, 1 failure\n",
+      # check naming:
+      "test basic test with tags and context\[a: 1, b: 2, expected: 3\]",
+      "test basic test with tags and context\[a: 1, b: 2, expected: 4\]"
+    ]
+    |> Enum.map(fn line ->
+      assert output =~ line
+    end)
   end
 
   test "tags with explicit context, alternate interface" do
@@ -184,10 +317,24 @@ defmodule ParameterizeTest do
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
-    assert capture_io(fn ->
-             predictable_ex_unit_start(trace: true)
-             assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
-           end) =~ "\n2 tests, 1 failure\n"
+    {result, output} =
+      with_io(fn ->
+        predictable_ex_unit_start(trace: true)
+        ExUnit.run()
+      end)
+
+    assert result == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+
+    [
+      # check result output:
+      "\n2 tests, 1 failure\n",
+      # check naming:
+      "test basic test with tags and context\[1, 2, 3\]",
+      "test basic test with tags and context\[1, 2, 4\]"
+    ]
+    |> Enum.map(fn line ->
+      assert output =~ line
+    end)
   end
 
   test "tags with setup and no context, keywordlist interface" do
@@ -213,10 +360,24 @@ defmodule ParameterizeTest do
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
-    assert capture_io(fn ->
-             predictable_ex_unit_start(trace: true)
-             assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
-           end) =~ "\n2 tests, 1 failure\n"
+    {result, output} =
+      with_io(fn ->
+        predictable_ex_unit_start(trace: true)
+        ExUnit.run()
+      end)
+
+    assert result == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+
+    [
+      # check result output:
+      "\n2 tests, 1 failure\n",
+      # check naming:
+      "test test with tags\[a: 1, b: 2, expected: 3\]",
+      "test test with tags\[a: 1, b: 2, expected: 4\]"
+    ]
+    |> Enum.map(fn line ->
+      assert output =~ line
+    end)
   end
 
   test "tags with setup and no context, alternate interface" do
@@ -243,10 +404,24 @@ defmodule ParameterizeTest do
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
-    assert capture_io(fn ->
-             predictable_ex_unit_start(trace: true)
-             assert ExUnit.run() == %{failures: 1, skipped: 0, total: 2, excluded: 0}
-           end) =~ "\n2 tests, 1 failure\n"
+    {result, output} =
+      with_io(fn ->
+        predictable_ex_unit_start(trace: true)
+        ExUnit.run()
+      end)
+
+    assert result == %{failures: 1, skipped: 0, total: 2, excluded: 0}
+
+    [
+      # check result output:
+      "\n2 tests, 1 failure\n",
+      # check naming:
+      "test test with tags\[1, 2, 3\]",
+      "test test with tags\[1, 2, 4\]"
+    ]
+    |> Enum.map(fn line ->
+      assert output =~ line
+    end)
   end
 
   test "not implemented, keywordlist interface" do
@@ -263,11 +438,13 @@ defmodule ParameterizeTest do
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
-    output =
-      capture_io(fn ->
+    {result, output} =
+      with_io(fn ->
         predictable_ex_unit_start(trace: true)
-        assert ExUnit.run() == %{failures: 2, skipped: 0, total: 2, excluded: 0}
+        ExUnit.run()
       end)
+
+    assert result == %{failures: 2, skipped: 0, total: 2, excluded: 0}
 
     [
       ~s<* test name[a: 1]>,
@@ -293,11 +470,13 @@ defmodule ParameterizeTest do
     ExUnit.Server.modules_loaded(false)
     configure_and_reload_on_exit(colors: [enabled: false])
 
-    output =
-      capture_io(fn ->
+    {result, output} =
+      with_io(fn ->
         predictable_ex_unit_start(trace: true)
-        assert ExUnit.run() == %{failures: 2, skipped: 0, total: 2, excluded: 0}
+        ExUnit.run()
       end)
+
+    assert result == %{failures: 2, skipped: 0, total: 2, excluded: 0}
 
     [
       ~s<* test name[1]>,
