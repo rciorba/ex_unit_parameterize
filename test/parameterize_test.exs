@@ -495,7 +495,10 @@ defmodule ParameterizeTest do
         {op, meta, operands}
 
       _ ->
-        meta = Keyword.put(meta, :line, line_number + delta)
+        # Since elixir 1.17 the "do" block has a lower linum than expected,
+        # which lead to negative line numbers, causing an error.
+        fixed_line_number = max(line_number + delta, 0)
+        meta = Keyword.put(meta, :line, fixed_line_number)
         {op, meta, operands}
     end
   end
@@ -572,7 +575,11 @@ defmodule ParameterizeTest do
       )
     end
 
-    assert_raise(FunctionClauseError, ~r/no function clause matching in ExUnitParameterize/, sut)
+    assert_raise(
+      FunctionClauseError,
+      ~r/no function clause matching in ExUnitParameterize/,
+      sut
+    )
   end
 
   defp configure_and_reload_on_exit(opts) do

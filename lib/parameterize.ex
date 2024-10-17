@@ -26,8 +26,8 @@ defmodule ExUnitParameterize do
 
   ## Test naming
 
-  By default the string representation of the params will be appended to the test name, unless you
-  provide an explicit name.
+  By default the string representation of the params will be appended to the test name,
+  unless you provide an explicit name.
 
   For the example above the test names would be:
     * basic test[a: 1, b: 1, expected: 2]
@@ -59,6 +59,8 @@ defmodule ExUnitParameterize do
   defp make_assigns_block(values, line_info) do
     line_num = Keyword.get(line_info, :line, 1)
 
+    # TODO: it would be nice to not write AST by hand and instead use the
+    # macro feature to generate the assignments block
     values
     |> Enum.map(fn {key, val} ->
       {:=, [line: line_num], [{key, [line: line_num], nil}, val]}
