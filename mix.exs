@@ -4,7 +4,7 @@ defmodule ExUnitParameterize.MixProject do
   def project do
     [
       app: :ex_unit_parameterize,
-      version: "0.1.0-alpha.3",
+      version: "0.1.0-alpha.4",
       elixir: "~> 1.14",
       deps: deps(),
       package: [
