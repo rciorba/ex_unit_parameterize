@@ -424,6 +424,26 @@ defmodule ParameterizeTest do
     end)
   end
 
+  test "not implemented, no params" do
+    defmodule NotImplementedNoParams do
+      use ExUnit.Case
+      import ExUnitParameterize
+
+      parameterized_test("name", [])
+    end
+
+    ExUnit.Server.modules_loaded(false)
+    configure_and_reload_on_exit(colors: [enabled: false])
+
+    {result, _output} =
+      with_io(fn ->
+        predictable_ex_unit_start(trace: true)
+        ExUnit.run()
+      end)
+
+    assert result == %{failures: 0, skipped: 0, total: 0, excluded: 0}
+  end
+
   test "not implemented, keywordlist interface" do
     defmodule KeywordlistInterfaceNotImplemented do
       use ExUnit.Case

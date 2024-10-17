@@ -2,12 +2,15 @@ defmodule ExUnitParameterize do
   @moduledoc """
   Parameterized tests for ExUnit.
 
-  Provides the `parameterized_test` macro, implementing test parameterization for ExUnit.
+  Provides the `parameterized_test` macro, implementing test parameterization for
+  ExUnit. This aims to behave just like the `ExUnit.test` macro (it actually uses the test
+  macro, under the hood), but takes one extra argument, the list of parameters.
 
-  The `parameterized_test` macro relies on the `ExUnit.Case.test` macro, and should support
-  all the same use-cases.
-  Please file an issue if you find use-cases of test which parameterized_test doesn't handle.
-
+  Each group of parameters in the list will generate a test.
+  Parameters will get injected into the test's `do` block as variables.
+  There are two ways to specify the names of the variables:
+   * once for all the params, as a list of atoms
+   * repeated for each group of params, by passing each params group as a keywords list
 
   ## Examples:
 
@@ -15,24 +18,37 @@ defmodule ExUnitParameterize do
         use ExUnit.Case
         import ExUnitParameterize
 
-        parameterized_test "basic test", [
-          [a: 1, b: 1, expected: 2],                # basic test[a:1, b:1, expected:2]
-          one_plus_two: [a: 1, b: 2, expected: 3],  # basic test[one_plus_two]
-          failing_case: [a: 1, b: 2, expected: 4]   # basic test[failing_case]
+        # specify the var names once, then provide the parameters
+        parameterized_test "vars once", [
+          [:a, :b, :expected],
+          [1, 1, 2],                # vars once[a:1, b:1, expected:2]
+          one_plus_two: [1, 2, 3],  # vars once[one_plus_two]
+          failing_case: [1, 2, 4]   # vars once[failing_case]
         ] do
           assert a + b == expected
         end
+
+        # repeat the var names for each param group
+        parameterized_test "vars repeated", [
+          [a: 1, b: 1, expected: 2],                # vars repeated[a:1, b:1, expected:2]
+          one_plus_two: [a: 1, b: 2, expected: 3],  # vars repeated[one_plus_two]
+          failing_case: [a: 1, b: 2, expected: 4]   # vars repeated[failing_case]
+        ] do
+          assert a + b == expected
+        end
+
+
       end
 
   ## Test naming
 
   By default the string representation of the params will be appended to the test name,
-  unless you provide an explicit name.
+  but you can provide an explicit name by passing the group of parameters as a keyword list.
 
-  For the example above the test names would be:
-    * basic test[a: 1, b: 1, expected: 2]
-    * basic test[one_plus_two]
-    * basic test[failing_case]
+  For the example above the names for the "vars once" `parameterized\_test` would be:
+    * `vars once[a: 1, b: 1, expected: 2]`
+    * `vars once[one_plus_two]`
+    * `vars once[failing_case]`
 
   In case the name would be longer than the max atom size, the 1-based index will be used.
   """
