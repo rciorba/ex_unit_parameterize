@@ -1,5 +1,6 @@
 # ExUnitParameterize
 ![tests](https://github.com/rciorba/yapara/actions/workflows/test.yaml/badge.svg?branch=master)
+[![](https://img.shields.io/hexpm/v/ex_unit_parameterize.svg?style=flat)](https://hex.pm/packages/ex_unit_parameterize)
 
 Parameterized tests for ExUnit.
 
