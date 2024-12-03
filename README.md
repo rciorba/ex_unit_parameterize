@@ -68,7 +68,7 @@ dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:ex_unit_parameterize, "~> 0.1.0"}
+    {:ex_unit_parameterize, "~> 0.1.0-alpha.4"}
   ]
 end
 ```
